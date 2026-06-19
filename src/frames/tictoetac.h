@@ -1,6 +1,6 @@
 #include <wx/wx.h>
 #include <iostream>
-class MainFrame : public wxFrame{
+class tictoetac : public wxFrame{
     public:
         enum IDs{
             button1_id = 2,
@@ -14,11 +14,10 @@ class MainFrame : public wxFrame{
             button9_id = 10,
             text_id = 11
         };
-        MainFrame(const wxString& title);
+        tictoetac(const wxString& title);
         wxString text[9];
         wxButton* buttons[9];
 
         char step = 'a';
         void button_event(wxCommandEvent& event);
-        void check();
 };
