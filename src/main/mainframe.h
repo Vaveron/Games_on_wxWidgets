@@ -4,8 +4,11 @@
 class MainFrame : public wxFrame{
     public:
         enum IDs{
-            button_id_change_frame = 12
+            button_id_change_frame_tic = 2001,
+            button_id_change_frame_snake = 2002
         };
         MainFrame(const wxString& title);
-        void button_click(wxCommandEvent& event);
+        void Button_tic(wxCommandEvent& event);
+        void Button_snake(wxCommandEvent& event);
+        void Onclose(wxCloseEvent& event);
 };

@@ -155,7 +155,7 @@ build_for_os() {
         CC="x86_64-w64-mingw32-gcc"
         WINDRES="x86_64-w64-mingw32-windres"
         
-        WX_DEFINES="-D__WXMSW__ -D__WXDEBUG__ -DwxUSE_UNICODE=1"
+        WX_DEFINES="-D__WXMSW__ -D__WXDEBUG__ -DwxUSE_UNICODE=1 -DwxUSE_GUI=1"
         
         # Ищем wxWidgets
         WX_BASE=$(find_wxwidgets "windows")
@@ -222,14 +222,10 @@ build_for_os() {
                 [ -f "$WX_LIB/libexpat.a" ] && LDFLAGS="$LDFLAGS -lexpat"
             else
                 echo -e "${RED}❌ Статические библиотеки wxWidgets не найдены!${NC}"
-                echo "Для статической сборки установите:"
-                echo "  sudo apt-get install mingw-w64-x86-64-dev"
-                echo "  или скачайте статические библиотеки wxWidgets"
-                ls -la "$WX_LIB"/libwx*.a 2>/dev/null || echo "Файлов .a нет"
                 return 1
             fi
         else
-            # ДИНАМИЧЕСКАЯ ЛИНКОВКА (ПО УМОЛЧАНИЮ)
+            # ДИНАМИЧЕСКАЯ ЛИНКОВКА
             LDFLAGS="-L$WX_LIB -mwindows -Wl,--gc-sections"
             
             if [ -f "$WX_LIB/libwx_mswu_core-3.2.dll.a" ]; then
@@ -237,19 +233,47 @@ build_for_os() {
                 LDFLAGS="$LDFLAGS -lwx_mswu_core-3.2 -lwx_baseu-3.2"
                 LDFLAGS="$LDFLAGS -lwx_mswu_adv-3.2 -lwx_mswu_html-3.2 -lwx_mswu_xrc-3.2"
             elif [ -f "$WX_LIB/libwx_mswu_core-3.2.a" ]; then
-                # Пробуем без dll
+                echo -e "${GREEN}✅ Найдены статические библиотеки (без DLL)${NC}"
                 LDFLAGS="$LDFLAGS -lwx_mswu_core-3.2 -lwx_baseu-3.2"
+                LDFLAGS="$LDFLAGS -lwx_mswu_adv-3.2 -lwx_mswu_html-3.2 -lwx_mswu_xrc-3.2"
             else
                 echo -e "${RED}❌ Динамические библиотеки wxWidgets не найдены!${NC}"
                 return 1
             fi
         fi
 
-        # СИСТЕМНЫЕ БИБЛИОТЕКИ WINDOWS (общие для обоих типов)
-        LDFLAGS="$LDFLAGS -lgdi32 -lole32 -loleaut32 -luuid -lcomctl32 -lcomdlg32"
-        LDFLAGS="$LDFLAGS -lshell32 -lshlwapi -lws2_32 -lwinmm -lversion -luxtheme"
-        LDFLAGS="$LDFLAGS -loleacc -lmsimg32 -lusp10 -lwinspool"
-        LDFLAGS="$LDFLAGS -lkernel32 -luser32 -ladvapi32"
+        # ========== СИСТЕМНЫЕ БИБЛИОТЕКИ WINDOWS ==========
+        # Основные (обязательные для любого Windows-приложения)
+        LDFLAGS="$LDFLAGS -lkernel32"      # Ядро
+        LDFLAGS="$LDFLAGS -luser32"        # Окна и клавиатура (ВАЖНО для стрелок!)
+        LDFLAGS="$LDFLAGS -lgdi32"         # Графика
+        LDFLAGS="$LDFLAGS -lcomctl32"      # Элементы управления
+        LDFLAGS="$LDFLAGS -lcomdlg32"      # Диалоги
+        
+        # Дополнительные
+        LDFLAGS="$LDFLAGS -lshell32"       # Shell
+        LDFLAGS="$LDFLAGS -lshlwapi"       # Shell API
+        LDFLAGS="$LDFLAGS -lole32"         # OLE
+        LDFLAGS="$LDFLAGS -loleaut32"      # OLE Automation
+        LDFLAGS="$LDFLAGS -luuid"          # UUID
+        LDFLAGS="$LDFLAGS -lws2_32"        # Сокеты
+        LDFLAGS="$LDFLAGS -lwinmm"         # Мультимедиа
+        LDFLAGS="$LDFLAGS -lversion"       # Версии
+        LDFLAGS="$LDFLAGS -luxtheme"       # Темы
+        LDFLAGS="$LDFLAGS -loleacc"        # Accessibility
+        LDFLAGS="$LDFLAGS -lmsimg32"       # Image
+        LDFLAGS="$LDFLAGS -lusp10"         # Uniscribe
+        LDFLAGS="$LDFLAGS -lwinspool"      # Spooler
+        LDFLAGS="$LDFLAGS -ladvapi32"      # Advanced API
+    
+        
+        # ========== ВЫВОД ИНФОРМАЦИИ ==========
+        echo -e "${BLUE}📋 Подключены системные библиотеки:${NC}"
+        echo "   kernel32, user32, gdi32, comctl32, comdlg32"
+        echo "   shell32, shlwapi, ole32, oleaut32, uuid"
+        echo "   ws2_32, winmm, version, uxtheme"
+        echo "   oleacc, msimg32, usp10, winspool, advapi32"
+        echo -e "${GREEN}✅ Все библиотеки подключены${NC}"
         
         EXE_SUFFIX=".exe"
         if [ "$BUILD_TYPE" == "static" ]; then
@@ -260,7 +284,6 @@ build_for_os() {
         
         RCFLAGS="-J rc -O coff -I$WX_INCLUDE"
         RC_FILES=$(find . -maxdepth 2 -type f -name "*.rc" 2>/dev/null)
-        
     elif [ "$os" == "linux" ]; then
         CXX="g++"
         CC="gcc"
